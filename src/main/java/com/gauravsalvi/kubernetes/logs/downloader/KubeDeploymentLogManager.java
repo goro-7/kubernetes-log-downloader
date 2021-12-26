@@ -15,6 +15,7 @@ import java.util.Scanner;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import lombok.SneakyThrows;
 import lombok.Value;
@@ -30,7 +31,7 @@ public class KubeDeploymentLogManager {
 
     private static final Runtime RUNTIME = Runtime.getRuntime();
 
-    private static final String PROCESS_DIR = "/Users/gauravsalvi/Desktop/logs";
+    private static final String PROCESS_DIR = "logs";
 
     private static final String POD_REGEX = "(%s[-\\w]*)";
 
@@ -43,7 +44,7 @@ public class KubeDeploymentLogManager {
         var futures = pods.stream()
             .map(line -> this.extractPodName(line, deploymentName))
             .flatMap(Optional::stream)
-            .map(pod -> createLoggingTask(deploymentName, createOutputDir(outputDir), pod))
+            .map(pod -> createLoggingTask(createOutputDir(outputDir), pod))
             .flatMap(Optional::stream)
             .map(CompletableFuture::runAsync)
             .toList();
@@ -70,7 +71,7 @@ public class KubeDeploymentLogManager {
             .map(context -> extract("k8s(\\w*).*", context, 1))
             .map(environment -> format.formatted(environment.orElse("unknown"), LocalDate.now()))
             .orElse(format.formatted("unknown", LocalDate.now()));
-        //Files.createDirectories(Path.of(outputDestination));
+        Files.createDirectories(Path.of(outputDestination));
         return
             outputDestination;
     }
@@ -80,11 +81,17 @@ public class KubeDeploymentLogManager {
     }
 
     private Optional<String> extractPodName(String line, String deploymentName) {
-        //var extract = RegexFns.extract(POD_REGEX.formatted(deploymentName), line, 1);
+        var regex = POD_REGEX.formatted(deploymentName);
+        var pattern = Pattern.compile(regex);
+        var matcher = pattern.matcher(line);
+        if (matcher.find()) {
+            var podName = matcher.group(1);
+            return Optional.of(podName);
+        }
         return Optional.empty();
     }
 
-    private Optional<Runnable> createLoggingTask(String deploymentName, String outputDir, String pod) {
+    private Optional<Runnable> createLoggingTask(String outputDir, String pod) {
         Runnable runnable = () -> {
             var command = LOG_POD_COMMAND.formatted(pod);
             var process = execCommand(command, outputDir + "/" + pod + ".log");
@@ -133,8 +140,10 @@ public class KubeDeploymentLogManager {
         }
     }
 
+    @SneakyThrows
     private ProcessBuilder createProcessBuilder(String command) {
         var pb = new ProcessBuilder(command.split(" "));
+        Files.createDirectories(Path.of(PROCESS_DIR));
         pb.directory(new File(PROCESS_DIR));
         pb.redirectErrorStream(true);
         return pb;
