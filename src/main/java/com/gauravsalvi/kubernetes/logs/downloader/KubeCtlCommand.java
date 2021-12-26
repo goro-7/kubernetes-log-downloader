@@ -26,8 +26,6 @@ public class KubeCtlCommand implements Runnable {
 
     private static final String POD_REGEX = "(%s[-\\w]*)";
 
-    public static final String LOGS = "/Users/gauravsalvi/Desktop/logs";
-
     @SneakyThrows
     @Override
     public void run() {
