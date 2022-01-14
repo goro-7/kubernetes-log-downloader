@@ -14,13 +14,10 @@ import lombok.With;
 public class KubeCtlCommand implements Runnable {
 
     private static final Set<String> SERVICES = Set.of(
-        "portfolio-core-reader-task-planner",
-        "portfolio-core-reader-worker"
-/*        "portfolio-core-api",
-        "portfolio-core"*/
+        "**enter service name **",
     );
 
-    private static final String GET_POD_COMMAND = "kubectl get pods -l name=portfolio-core-reader-task-planner";
+    private static final String GET_POD_COMMAND = "kubectl get pods -l name=** enter pod name **";
 
     private static final String LOG_POD_COMMAND = "kubectl logs %s -f";
 
